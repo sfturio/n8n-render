@@ -23,6 +23,9 @@ Architecture flow:
 Related app repo:
 - https://github.com/sfturio/ai-agent-n8n
 
+Project link:
+- https://ai-agent-n8n-zefs.onrender.com/
+
 ## Why Keep This Separate
 
 Keeping n8n in its own repository makes it easier to:
@@ -57,6 +60,31 @@ For production, set strong values for auth password and encryption key.
 3. Set environment variables from `.env.example`.
 4. Save and deploy.
 5. Copy your n8n webhook URL and configure it in `ai-agent-n8n`.
+
+## Cold Start Mitigation (Recommended)
+
+To reduce first-message failures on Render free tier:
+
+1. Create a dedicated warmup workflow in n8n:
+   - Trigger: `Webhook` (method `GET`, path `agent-warmup`)
+   - Action: `Respond to Webhook` with `200` and a simple JSON body.
+2. Keep your main agent workflow in a separate webhook path.
+3. In `ai-agent-n8n` set:
+   - `N8N_WARMUP_URL=https://your-n8n.onrender.com/webhook/agent-warmup`
+   - `N8N_WARMUP_METHOD=GET`
+   - `N8N_REQUEST_TIMEOUT_MS=45000` (or higher if needed)
+4. Optionally use an external uptime ping on the warmup endpoint every 5 minutes.
+
+This keeps n8n warm more often and lets the API gate requests until workflow readiness.
+
+## Render/Proxy Best Practices
+
+- Set `N8N_PROTOCOL=https`
+- Set `N8N_PROXY_HOPS=1`
+- Set `N8N_EDITOR_BASE_URL` to your Render n8n URL
+- Set `WEBHOOK_URL` to the same public URL
+- Keep `N8N_ENCRYPTION_KEY` stable across redeploys
+- Do not commit real `.env` credentials into Git
 
 ## Notes
 
